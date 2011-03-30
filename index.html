@@ -6,15 +6,18 @@
         <title>Visual MIPS Simulator</title>
 		<script type="text/javascript" src="lib/jquery/jquery-1.4.2.js"></script>
 		<script type="text/javascript" src="main.js"></script>
+		<script type="text/javascript" src="cosmetic.js"></script>
     </head>
     <body>
         <h1>Visual MIPS Simulator</h1>
+		<textarea rows=16 cols=60 onclick=wipe(this); id="meminit">Paste meminit.hex here...</textarea><br />
 		<button onclick=run();>Simulate</button>
 		<button onclick=reset();>Reset</button>
 		<br />
 		<input id="enableDebug" type="checkbox">Step-by-step</input>
 		<button id="step" disabled=true onclick=step();>Step</button>
 		<hr />
-		PC: <label id="label_pc">-offline-</label>
+		PC: <label id="label_pc">-offline-</label><br />
+		Instruction: <label id="label_instruction">-offline-</label>
     </body>
 </html>
