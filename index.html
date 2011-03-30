@@ -7,6 +7,9 @@
 		<script type="text/javascript" src="lib/jquery/jquery-1.4.2.js"></script>
 		<script type="text/javascript" src="main.js"></script>
 		<script type="text/javascript" src="cosmetic.js"></script>
+		<script type="text/javascript" src="lib/cell/programCounter.js"></script>
+		<script type="text/javascript" src="lib/cell/memory.js"></script>
+		<script type="text/javascript" src="lib/cell/cache.js"></script>
     </head>
     <body>
         <h1>Visual MIPS Simulator</h1>
@@ -18,6 +21,7 @@
 		<button id="step" disabled=true onclick=step();>Step</button>
 		<hr />
 		PC: <label id="label_pc">-offline-</label><br />
-		Instruction: <label id="label_instruction">-offline-</label>
+		Instruction: <label id="label_instruction">-offline-</label><br />
+		<pre id='icache_dump'></pre>
     </body>
 </html>

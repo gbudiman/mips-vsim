@@ -1,38 +1,3 @@
-function programCounter(initVal) {
-	this.counter = initVal;
-}
-
-programCounter.prototype.advance = function(jump, jumpAddr, jr, jrAddr, halt) {
-	if (halt == true) { /* do nothing */ }
-	else if (jump == true) { this.counter = jumpAddr; }
-	else if (jr == true) { this.counter = jrAddr; }
-	else { this.counter += 4; }
-}
-programCounter.prototype.portOut = function() {
-	return this.counter;
-}
-programCounter.prototype.visual = function() {
-	$('#label_pc').text(this.counter.toString(16).toUpperCase());
-}
-
-function memory() {
-	this.content = new Array();
-}
-
-memory.prototype.dump = function() {
-	var myDump;
-	for (var i in this.content) {
-		myDump += parseInt(i).toString(16) + ': ' + this.content[i].toString(16) + '\n';
-	}
-	alert(myDump);
-}
-memory.prototype.portRead = function(address) {
-	return this.content[address/4];
-}
-memory.prototype.visual = function(address) {
-	$('#label_instruction').text(this.content[address/4].toString(16).toUpperCase());
-}
-
 //////////////////////////////////////////////////////////////////////////////
 // Utilities
 //////////////////////////////////////////////////////////////////////////////
@@ -47,12 +12,23 @@ function loadMemory(myMemory) {
 	}
 }
 
+Number.prototype.formatHex = function(length){
+	var hexString = parseInt(this).toString(16).toUpperCase();
+	if (hexString.length < length) {
+		var padding = length - hexString.length;
+		var zero = new Array(padding + 1).join('0');
+		return 'x' + zero + hexString;
+	}
+	return 'x' + hexString;
+}
 //////////////////////////////////////////////////////////////////////////////
 // Runtime
 //////////////////////////////////////////////////////////////////////////////
 function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
+	icache = new cache(32, 8, 4);
+	icache.visual();
 	loadMemory(mainMemory);
 	//mainMemory.dump();
 	
