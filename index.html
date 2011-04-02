@@ -13,7 +13,40 @@
     </head>
     <body>
         <h1>Visual MIPS Simulator</h1>
-		<textarea rows=16 cols=60 onclick=wipe(this); id="meminit">Paste meminit.hex here...</textarea><br />
+		<table>
+			<tr>
+				<td>
+					<textarea rows=16 cols=60 onclick=wipe(this); id="meminit">Paste meminit.hex here...</textarea><br />
+				</td>
+				<td>
+					<table>
+						<tr>
+							<td>I-Cache associativity</td>
+							<td>
+								<input id='i_associativity' value=2 size=2></input>
+							</td>
+						</tr>
+						<tr>
+							<td>I-Cache index width in bits</td>
+							<td>
+								<input id='i_index' value=4 size=2 onkeyup="recalculate(this, 'i_index_info')"></input>
+								<label id='i_index_info'>16</label> frames per set
+							</td>
+						</tr>
+						<tr>
+							<td>I-Cache block offset in bits</td>
+							<td>
+								<input id='i_block' value=3 size=2 onkeyup="recalculate(this, 'i_block_info')"></input>
+								<label id='i_block_info'>2</label> bytes per block
+							</td>
+						</tr>
+						<tr>
+							<td><pre><label id='general_info'></label></pre></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
 		<button onclick=run();>Simulate</button>
 		<button onclick=reset();>Reset</button>
 		<br />
@@ -22,6 +55,7 @@
 		<hr />
 		PC: <label id="label_pc">-offline-</label><br />
 		Instruction: <label id="label_instruction">-offline-</label><br />
+		I-Cache: <label id="label_icache">-offline-</label><br />
 		<pre id='icache_dump'></pre>
     </body>
 </html>

@@ -21,13 +21,45 @@ Number.prototype.formatHex = function(length){
 	}
 	return 'x' + hexString;
 }
+
+Number.prototype.pad = function(padding, character) {
+	var padRequired = padding - this.toString().length;
+	var zero = new Array(padRequired + 1).join(character);
+	return zero + this;
+}
+
+Array.prototype.min = function() {
+	var min = 0x7FFFFFFF;
+	var index = 0;
+	for (i = 0; i < this.length; i++) {
+		if (this[i] < min) {
+			min = this[i];
+			index = i;
+		}
+	}
+	
+	return index;
+}
+
+Array.prototype.max = function() {
+	var max = 0;
+	var index = 0;
+	for (i = 0; i < this.length; i++) {
+		if (this[i] > max) {
+			max = this[i];
+			index = i;
+		}
+	}
+	
+	return index;
+}
 //////////////////////////////////////////////////////////////////////////////
 // Runtime
 //////////////////////////////////////////////////////////////////////////////
 function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
-	icache = new cache(32, 8, 4);
+	icache = new cache($('#i_index').val(), $('#i_block').val(), $('#i_associativity').val());
 	icache.visual();
 	loadMemory(mainMemory);
 	//mainMemory.dump();
@@ -36,18 +68,24 @@ function run() {
 		$('#step').attr('disabled', false);
 	}
 	else {
-		for (i = 0; i < 3; i++) {
-			step();
-		}
+		do {
+			var localIns = step();
+		} while (localIns != 0xFFFFFFFF)
 	}
 }
 
 function step() {
-	pc.portOut();
-	mainMemory.portRead(pc.portOut());
+	var netPC = pc.portOut();
 	pc.visual();
-	mainMemory.visual(pc.portOut());
+	icache.read(netPC, mainMemory);
+	//mainMemory.visual(pc.portOut());
 	pc.advance(false, 0, false, 0, false);
+	
+	return mainMemory.portRead(netPC);
+}
+
+function recalculate(myObject, target) {
+	$('#' + target).text(Math.pow(2, myObject.value));
 }
 
 function reset() {
