@@ -10,6 +10,8 @@
 		<script type="text/javascript" src="lib/cell/programCounter.js"></script>
 		<script type="text/javascript" src="lib/cell/memory.js"></script>
 		<script type="text/javascript" src="lib/cell/cache.js"></script>
+		<script type="text/javascript" src="lib/cell/pipeline_ifid.js"></script>
+		<script type="text/javascript" src="lib/cell/registerFile.js"></script>
     </head>
     <body>
         <h1>Visual MIPS Simulator</h1>
@@ -56,6 +58,9 @@
 		PC: <label id="label_pc">-offline-</label><br />
 		Instruction: <label id="label_instruction">-offline-</label><br />
 		I-Cache: <label id="label_icache">-offline-</label><br />
+		Pipeline-IFID:<br />
+		>> addPC: <label id="label_ifid_addPC">-offline-</label><br />
+		>> instruction: <label id="label_ifid_instruction">-offline-</label><br />
 		<pre id='icache_dump'></pre>
     </body>
 </html>

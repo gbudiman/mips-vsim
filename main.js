@@ -59,7 +59,10 @@ Array.prototype.max = function() {
 function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
+	ifid = new pipeline_ifid();
 	icache = new cache($('#i_index').val(), $('#i_block').val(), $('#i_associativity').val());
+	register = new registerFile(32);
+	
 	icache.visual();
 	loadMemory(mainMemory);
 	//mainMemory.dump();
@@ -77,10 +80,13 @@ function run() {
 function step() {
 	var netPC = pc.portOut();
 	pc.visual();
-	icache.read(netPC, mainMemory);
-	//mainMemory.visual(pc.portOut());
+	//icache.read(netPC, mainMemory);
+	ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
+	ifid.portAddPC();
+	ifid.portInstruction();
 	pc.advance(false, 0, false, 0, false);
 	
+	ifid.clock();
 	return mainMemory.portRead(netPC);
 }
 
