@@ -28,6 +28,29 @@ Number.prototype.pad = function(padding, character) {
 	return zero + this;
 }
 
+Number.prototype.extract = function(part) {
+	var opcodeMask = 0xFC000000;
+	var rsMask = 0x3E00000;
+	var rtMask = 0x1F0000;
+	var rdMask = 0xF800;
+	var shamtMask = 0x7C0;
+	var aluMask = 0x3F;
+	var immediateMask = 0xFFFF;
+	var jumpMask = 0x3FFFFFF;
+	
+	switch(part) {
+		case 'opcode': return (this & opcodeMask) >> 26;
+		case 'rs': return (this & rsMask) >> 21;
+		case 'rt': return (this & rtMask) >> 16;
+		case 'rd': return (this & rdMask) >> 11;
+		case 'shamt': return (this & shamtMask) >> 6;
+		case 'alu': return this & aluMask;
+		case 'immediate': return this & immediateMask;
+		case 'jump': return this & jumpMask;
+		default: return -1;
+	}
+}
+
 Array.prototype.min = function() {
 	var min = 0x7FFFFFFF;
 	var index = 0;
@@ -78,12 +101,16 @@ function run() {
 }
 
 function step() {
+	var ifidInstruction = 0;
 	var netPC = pc.portOut();
 	pc.visual();
 	//icache.read(netPC, mainMemory);
 	ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
 	ifid.portAddPC();
-	ifid.portInstruction();
+	ifidInstruction = ifid.portInstruction();
+	//alert(ifidInstruction + ' ' + ifidInstruction.extract('rt'));
+	register.portRead(ifidInstruction.extract('rs'), 'label_ifid_ra');
+	register.portRead(ifidInstruction.extract('rt'), 'label_ifid_rb');
 	pc.advance(false, 0, false, 0, false);
 	
 	ifid.clock();
