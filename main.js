@@ -28,7 +28,7 @@ Number.prototype.pad = function(padding, character) {
 	return zero + this;
 }
 
-Number.prototype.extract = function(part) {
+Number.prototype.extract = function(part, visual) {
 	var opcodeMask = 0xFC000000;
 	var rsMask = 0x3E00000;
 	var rtMask = 0x1F0000;
@@ -38,6 +38,16 @@ Number.prototype.extract = function(part) {
 	var immediateMask = 0xFFFF;
 	var jumpMask = 0x3FFFFFF;
 	
+	if (visual) {
+		$('#label_ifid_opcode').value(((this & opcodeMask) >> 26).formatBinary(8));
+		$('#label_ifid_rs').value(((this & rsMask) >> 21).formatBinary(8));
+		$('#label_ifid_rt').value(((this & rtMask) >> 16).formatBinary(8));
+		$('#label_ifid_rd').value(((this & rdMask) >> 11).formatBinary(8));
+		$('#label_ifid_shamt').value(((this & shamtMask) >> 6).formatBinary(8));
+		$('#label_ifid_alu').value(((this & shamtMask)).formatBinary(8));
+		$('#label_ifid_immediate').value(((this & shamtMask)).formatHex(8));
+		$('#label_ifid_jump').value(((this & jumpMask)).formatHex(8));
+	}
 	switch(part) {
 		case 'opcode': return (this & opcodeMask) >> 26;
 		case 'rs': return (this & rsMask) >> 21;
