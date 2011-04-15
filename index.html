@@ -12,6 +12,7 @@
 		<script type="text/javascript" src="lib/cell/cache.js"></script>
 		<script type="text/javascript" src="lib/cell/pipeline_ifid.js"></script>
 		<script type="text/javascript" src="lib/cell/registerFile.js"></script>
+		<script type="text/javascript" src="lib/cell/controlLogicUnit.js"></script>
     </head>
     <body>
         <h1>Visual MIPS Simulator</h1>
@@ -61,8 +62,8 @@
 		Pipeline-IFID:<br />
 		>> addPC: <label id="label_ifid_addPC">-offline-</label><br />
 		>> instruction: <label id="label_ifid_instruction">-offline-</label><br />
-		Register-A: <label id="label_ifid_ra">-offline-</label><br />
-		Register-B: <label id="label_ifid_rb">-offline-</label><br />
-		<pre id='icache_dump'></pre>
+		Decoded instruction: <br />
+		<pre id="pre_decoder"></pre>
+		<pre id="icache_dump"></pre>
     </body>
 </html>
