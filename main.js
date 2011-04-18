@@ -39,11 +39,11 @@ Number.prototype.extract = function(part) {
 	var jumpMask = 0x3FFFFFF;
 	
 	switch(part) {
-		case 'opcode': return (this & opcodeMask) >> 26;
-		case 'rs': return (this & rsMask) >> 21;
-		case 'rt': return (this & rtMask) >> 16;
-		case 'rd': return (this & rdMask) >> 11;
-		case 'shamt': return (this & shamtMask) >> 6;
+		case 'opcode': return (this & opcodeMask) >>> 26;
+		case 'rs': return (this & rsMask) >>> 21;
+		case 'rt': return (this & rtMask) >>> 16;
+		case 'rd': return (this & rdMask) >>> 11;
+		case 'shamt': return (this & shamtMask) >>> 6;
 		case 'alu': return this & aluMask;
 		case 'immediate': return this & immediateMask;
 		case 'jump': return this & jumpMask;
