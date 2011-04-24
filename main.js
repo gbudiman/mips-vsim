@@ -8,6 +8,7 @@ function loadMemory(myMemory) {
 			var address = parseInt(data[i].substring(3, 7), 16);
 			var inputData = parseInt(data[i].substring(9, 17), 16);
 			myMemory.content[address] = inputData;
+			//alert(inputData + ' writing ' + parseInt(inputData, 16) + ' to ' + address);
 		}
 	}
 }
@@ -91,6 +92,11 @@ Array.prototype.max = function() {
 //////////////////////////////////////////////////////////////////////////////
 // Runtime
 //////////////////////////////////////////////////////////////////////////////
+function createPipelineIFID() {
+	var arraySignal = new Array('nextPC', 'instruction');
+	pipelineIFID = new pipelineLatch(arraySignal, 'Pipeline IFID');
+	return pipelineIFID;
+}
 function createRegDstMux() {
 	var arraySignal = new Array('rt', 'rd', 'returnAddress');
 	regDstMux = new mux(arraySignal, 'regDstMux', 'pre_regDst', false);
@@ -106,8 +112,10 @@ function createExtenderMux() {
 function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
-	ifid = new pipeline_ifid();
-	icache = new cache($('#i_index').val(), $('#i_block').val(), $('#i_associativity').val());
+	pipelineIFID = createPipelineIFID();
+	icache = new cache($('#i_index').val()
+	                   , $('#i_block').val()
+					   , $('#i_associativity').val());
 	register = new registerFile(32);
 	clu = new controlLogicUnit();
 	regDstMux = createRegDstMux();
@@ -115,7 +123,7 @@ function run() {
 	
 	icache.visual();
 	loadMemory(mainMemory);
-	//mainMemory.dump();
+	mainMemory.dump();
 	
 	if ($('#enableDebug').is(':checked')) {
 		$('#step').attr('disabled', false);
@@ -132,10 +140,11 @@ function step() {
 	var netPC = pc.portOut();
 	pc.visual();
 	//icache.read(netPC, mainMemory);
-	ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
-	ifid.portAddPC();
-	ifidInstruction = ifid.portInstruction();
-	//alert(ifidInstruction + ' ' + ifidInstruction.extract('rt'));
+	//ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
+	//ifid.portAddPC();
+	pipelineIFID.clock(new Array(pc.portAddPC
+	                             , icache.read(netPC, mainMemory)));
+	ifidInstruction = pipelineIFID.portOut('instruction');
 	clu.passThrough(ifidInstruction);
 	regDstMux.portOut(new Array(ifidInstruction.extract('rt')
 								, ifidInstruction.extract('rd')
@@ -144,11 +153,8 @@ function step() {
 	extenderMux.portOut(new Array(ifidInstruction.extract('immediateExtendSign')
 								, ifidInstruction.extract('immediate'))
 						, clu.portExtendSign());
-	//register.portRead(ifidInstruction.extract('rs'), 'label_ifid_ra');
-	//register.portRead(ifidInstruction.extract('rt'), 'label_ifid_rb');
 	pc.advance(false, 0, false, 0, false);
 	
-	ifid.clock();
 	return mainMemory.portRead(netPC);
 }
 
