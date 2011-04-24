@@ -14,10 +14,21 @@ function loadMemory(myMemory) {
 
 Number.prototype.formatHex = function(length){
 	var hexString = parseInt(this).toString(16).toUpperCase();
-	if (hexString.length < length) {
-		var padding = length - hexString.length;
-		var zero = new Array(padding + 1).join('0');
-		return 'x' + zero + hexString;
+	//$('#pre_debug').append(hexString + '\n');
+	if (hexString[0] == '-') {
+		hexString = hexString.replace(hexString.charAt(0), 'F');
+		if (hexString.length < length - 1) {
+			var padding = length - hexString.length;
+			var zero = new Array(padding + 1).join('F');
+			return 'x' + zero + hexString;
+		}
+	}
+	else { 
+		if (hexString.length < length) {
+			var padding = length - hexString.length;
+			var zero = new Array(padding + 1).join('0');
+			return 'x' + zero + hexString;
+		}
 	}
 	return 'x' + hexString;
 }
@@ -39,15 +50,16 @@ Number.prototype.extract = function(part) {
 	var jumpMask = 0x3FFFFFF;
 	
 	switch(part) {
-		case 'opcode': return (this & opcodeMask) >>> 26;
+		case 'opcode': return (this & opcodeMask) >>> 26; break;
 		case 'rs': return (this & rsMask) >>> 21;
 		case 'rt': return (this & rtMask) >>> 16;
 		case 'rd': return (this & rdMask) >>> 11;
 		case 'shamt': return (this & shamtMask) >>> 6;
 		case 'alu': return this & aluMask;
 		case 'immediate': return this & immediateMask;
+		case 'immediateExtendSign': return -1 * (this & immediateMask);
 		case 'jump': return this & jumpMask;
-		default: return -1;
+		default: alert('Unknown integer extraction parameter');
 	}
 }
 
@@ -81,8 +93,14 @@ Array.prototype.max = function() {
 //////////////////////////////////////////////////////////////////////////////
 function createRegDstMux() {
 	var arraySignal = new Array('rt', 'rd', 'returnAddress');
-	regDstMux = new mux(arraySignal, 'regDstMux', 'pre_regDst');
+	regDstMux = new mux(arraySignal, 'regDstMux', 'pre_regDst', false);
 	return regDstMux;
+}
+
+function createExtenderMux() {
+	var arraySignal = new Array('extendSign', 'extendZero');
+	extenderMux = new mux(arraySignal, 'extenderMux', 'pre_extender', true);
+	return extenderMux;
 }
 
 function run() {
@@ -93,6 +111,7 @@ function run() {
 	register = new registerFile(32);
 	clu = new controlLogicUnit();
 	regDstMux = createRegDstMux();
+	extenderMux = createExtenderMux();
 	
 	icache.visual();
 	loadMemory(mainMemory);
@@ -120,8 +139,11 @@ function step() {
 	clu.passThrough(ifidInstruction);
 	regDstMux.portOut(new Array(ifidInstruction.extract('rt')
 								, ifidInstruction.extract('rd')
-								, 31), 
-						clu.portRegDst());
+								, 31) 
+						, clu.portRegDst());
+	extenderMux.portOut(new Array(ifidInstruction.extract('immediateExtendSign')
+								, ifidInstruction.extract('immediate'))
+						, clu.portExtendSign());
 	//register.portRead(ifidInstruction.extract('rs'), 'label_ifid_ra');
 	//register.portRead(ifidInstruction.extract('rt'), 'label_ifid_rb');
 	pc.advance(false, 0, false, 0, false);
