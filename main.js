@@ -79,6 +79,12 @@ Array.prototype.max = function() {
 //////////////////////////////////////////////////////////////////////////////
 // Runtime
 //////////////////////////////////////////////////////////////////////////////
+function createRegDstMux() {
+	var arraySignal = new Array('rt', 'rd', 'returnAddress');
+	regDstMux = new mux(arraySignal, 'regDstMux', 'pre_regDst');
+	return regDstMux;
+}
+
 function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
@@ -86,6 +92,7 @@ function run() {
 	icache = new cache($('#i_index').val(), $('#i_block').val(), $('#i_associativity').val());
 	register = new registerFile(32);
 	clu = new controlLogicUnit();
+	regDstMux = createRegDstMux();
 	
 	icache.visual();
 	loadMemory(mainMemory);
@@ -111,8 +118,12 @@ function step() {
 	ifidInstruction = ifid.portInstruction();
 	//alert(ifidInstruction + ' ' + ifidInstruction.extract('rt'));
 	clu.passThrough(ifidInstruction);
-	register.portRead(ifidInstruction.extract('rs'), 'label_ifid_ra');
-	register.portRead(ifidInstruction.extract('rt'), 'label_ifid_rb');
+	regDstMux.portOut(new Array(ifidInstruction.extract('rt')
+								, ifidInstruction.extract('rd')
+								, 31), 
+						clu.portRegDst());
+	//register.portRead(ifidInstruction.extract('rs'), 'label_ifid_ra');
+	//register.portRead(ifidInstruction.extract('rt'), 'label_ifid_rb');
 	pc.advance(false, 0, false, 0, false);
 	
 	ifid.clock();
