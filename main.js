@@ -97,6 +97,20 @@ function createPipelineIFID() {
 	pipelineIFID = new pipelineLatch(arraySignal, 'Pipeline IFID');
 	return pipelineIFID;
 }
+function createPipelineIDEX() {
+	var arraySignal = new Array('nextPC'
+	                            , 'rA'
+								, 'rB'
+								, 'rs'
+								, 'rt'
+								, 'rd'
+								, 'ext'
+								, 'shamt'
+								, 'bundle'
+								, 'instruction');
+	pipelineIDEX = new pipelineLatch(arraySignal, 'Pipeline IDEX');
+	return pipelineIDEX;
+}
 function createRegDstMux() {
 	var arraySignal = new Array('rt', 'rd', 'returnAddress');
 	regDstMux = new mux(arraySignal, 'regDstMux', 'pre_regDst', false);
@@ -113,6 +127,7 @@ function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
 	pipelineIFID = createPipelineIFID();
+	pipelineIDEX = createPipelineIDEX();
 	icache = new cache($('#i_index').val()
 	                   , $('#i_block').val()
 					   , $('#i_associativity').val());
@@ -120,10 +135,11 @@ function run() {
 	clu = new controlLogicUnit();
 	regDstMux = createRegDstMux();
 	extenderMux = createExtenderMux();
+	alu = new alu();
 	
 	icache.visual();
 	loadMemory(mainMemory);
-	mainMemory.dump();
+	//mainMemory.dump();
 	
 	if ($('#enableDebug').is(':checked')) {
 		$('#step').attr('disabled', false);
@@ -137,7 +153,11 @@ function run() {
 
 function step() {
 	var ifidInstruction = 0;
-	var netPC = pc.portOut();
+	var netPC;
+	var netExtender;
+	var netRegDst;
+	
+	netPC = pc.portOut();
 	pc.visual();
 	//icache.read(netPC, mainMemory);
 	//ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
@@ -145,15 +165,27 @@ function step() {
 	pipelineIFID.clock(new Array(pc.portAddPC
 	                             , icache.read(netPC, mainMemory)));
 	ifidInstruction = pipelineIFID.portOut('instruction');
-	clu.passThrough(ifidInstruction);
-	regDstMux.portOut(new Array(ifidInstruction.extract('rt')
-								, ifidInstruction.extract('rd')
-								, 31) 
-						, clu.portRegDst());
-	extenderMux.portOut(new Array(ifidInstruction.extract('immediateExtendSign')
-								, ifidInstruction.extract('immediate'))
-						, clu.portExtendSign());
+	netRegDst = regDstMux.portOut(new Array(ifidInstruction.extract('rt')
+								            , ifidInstruction.extract('rd')
+								            , 31) 
+						          , clu.portRegDst());
+	netExtender = extenderMux.portOut(new Array(ifidInstruction.extract('immediateExtendSign')
+								                , ifidInstruction.extract('immediate'))
+						                        , clu.portExtendSign());
+	pipelineIDEX.clock(new Array(pipelineIFID.portOut('nextPC')
+	                             , register.portRead(ifidInstruction.extract('rs'))
+								 , register.portRead(ifidInstruction.extract('rt'))
+								 , ifidInstruction.extract('rs')
+								 , ifidInstruction.extract('rt')
+								 , netRegDst
+								 , netExtender
+								 , ifidInstruction.extract('shamt')
+								 , clu.passThrough(ifidInstruction)
+								 , ifidInstruction));
 	pc.advance(false, 0, false, 0, false);
+	alu.process(pipelineIDEX.portOut('rA')
+	            , pipelineIDEX.portOut('rB')
+				, pipelineIDEX.portOut('bundle')['ALUOpcode']);
 	
 	return mainMemory.portRead(netPC);
 }
