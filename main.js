@@ -98,6 +98,7 @@ function createPipelineIFID() {
 	return pipelineIFID;
 }
 function createPipelineIDEX() {
+	var dummyCLU = new controlLogicUnit();
 	var arraySignal = new Array('nextPC'
 	                            , 'rA'
 								, 'rB'
@@ -109,15 +110,18 @@ function createPipelineIDEX() {
 								, 'bundle'
 								, 'instruction');
 	pipelineIDEX = new pipelineLatch(arraySignal, 'Pipeline IDEX');
+	pipelineIDEX.initializeRegister('bundle', dummyCLU.passThrough(0));
 	return pipelineIDEX;
 }
 function createPipelineEXMEM() {
+	var dummyCLU = new controlLogicUnit();
 	var arraySignal = new Array('result'
 	                            , 'data'
 								, 'rd'
 								, 'bundle'
 								, 'instruction');
 	pipelineEXMEM = new pipelineLatch(arraySignal, 'Pipeline EXMEM');
+	pipelineEXMEM.initializeRegister('bundle', dummyCLU.passThrough(0));
 	return pipelineEXMEM;
 }
 function createRegDstMux() {
