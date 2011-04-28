@@ -111,6 +111,15 @@ function createPipelineIDEX() {
 	pipelineIDEX = new pipelineLatch(arraySignal, 'Pipeline IDEX');
 	return pipelineIDEX;
 }
+function createPipelineEXMEM() {
+	var arraySignal = new Array('result'
+	                            , 'data'
+								, 'rd'
+								, 'bundle'
+								, 'instruction');
+	pipelineEXMEM = new pipelineLatch(arraySignal, 'Pipeline EXMEM');
+	return pipelineEXMEM;
+}
 function createRegDstMux() {
 	var arraySignal = new Array('rt', 'rd', 'returnAddress');
 	regDstMux = new mux(arraySignal, 'regDstMux', 'pre_regDst', false);
@@ -122,12 +131,17 @@ function createExtenderMux() {
 	extenderMux = new mux(arraySignal, 'extenderMux', 'pre_extender', true);
 	return extenderMux;
 }
-
+function createALUSrcMux() {
+	var arraySignal = new Array('normal', 'shamt', 'ext', 'upper');
+	ALUSrcMux = new mux(arraySignal, 'ALUSrcMux', 'pre_ALUSrcMux', true);
+	return ALUSrcMux;
+}
 function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
 	pipelineIFID = createPipelineIFID();
 	pipelineIDEX = createPipelineIDEX();
+	pipelineEXMEM = createPipelineEXMEM();
 	icache = new cache($('#i_index').val()
 	                   , $('#i_block').val()
 					   , $('#i_associativity').val());
@@ -136,6 +150,7 @@ function run() {
 	regDstMux = createRegDstMux();
 	extenderMux = createExtenderMux();
 	alu = new alu();
+	aluSrcMux = new createALUSrcMux();
 	
 	icache.visual();
 	loadMemory(mainMemory);
@@ -156,6 +171,8 @@ function step() {
 	var netPC;
 	var netExtender;
 	var netRegDst;
+	var aluB = 0;
+	var aluOut = 0;
 	
 	netPC = pc.portOut();
 	pc.visual();
@@ -171,7 +188,7 @@ function step() {
 						          , clu.portRegDst());
 	netExtender = extenderMux.portOut(new Array(ifidInstruction.extract('immediateExtendSign')
 								                , ifidInstruction.extract('immediate'))
-						                        , clu.portExtendSign());
+						              , clu.portExtendSign());
 	pipelineIDEX.clock(new Array(pipelineIFID.portOut('nextPC')
 	                             , register.portRead(ifidInstruction.extract('rs'))
 								 , register.portRead(ifidInstruction.extract('rt'))
@@ -183,10 +200,19 @@ function step() {
 								 , clu.passThrough(ifidInstruction)
 								 , ifidInstruction));
 	pc.advance(false, 0, false, 0, false);
-	alu.process(pipelineIDEX.portOut('rA')
-	            , pipelineIDEX.portOut('rB')
+	aluB = aluSrcMux.portOut(new Array(pipelineIDEX.portOut('rB')
+	                                   , pipelineIDEX.portOut('shamt')
+					                   , pipelineIDEX.portOut('ext')
+					                   , pipelineIDEX.portOut('ext') << 16)
+					         , pipelineIDEX.portOut('bundle')['ALUSrc']);
+	aluOut = alu.process(pipelineIDEX.portOut('rA')
+	            , aluB
 				, pipelineIDEX.portOut('bundle')['ALUOpcode']);
-	
+	pipelineEXMEM.clock(new Array(pipelineIDEX.portOut('nextPC')
+	                              , aluOut
+								  , pipelineIDEX.portOut('rd')
+								  , pipelineIDEX.portOut('bundle')
+								  , pipelineIDEX.portOut('instruction')));
 	return mainMemory.portRead(netPC);
 }
 
