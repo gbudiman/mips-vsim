@@ -156,7 +156,7 @@ function run() {
 	alu = new alu();
 	aluSrcMux = new createALUSrcMux();
 	
-	icache.visual();
+	icache.visual('icache');
 	loadMemory(mainMemory);
 	//mainMemory.dump();
 	
@@ -184,7 +184,7 @@ function step() {
 	//ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
 	//ifid.portAddPC();
 	pipelineIFID.clock(new Array(pc.portAddPC
-	                             , icache.read(netPC, mainMemory)));
+	                             , icache.read(netPC, mainMemory, 'icache')));
 	ifidInstruction = pipelineIFID.portOut('instruction');
 	netRegDst = regDstMux.portOut(new Array(ifidInstruction.extract('rt')
 								            , ifidInstruction.extract('rd')

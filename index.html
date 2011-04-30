@@ -58,21 +58,31 @@
 		<input id="enableDebug" type="checkbox">Step-by-step</input>
 		<button id="step" disabled=true onclick=step();>Step</button>
 		<hr />
-		PC: <label id="label_pc">-offline-</label><br />
-		Instruction: <label id="label_instruction">-offline-</label><br />
-		I-Cache: <label id="label_icache">-offline-</label><br />
-		Pipeline-IFID:<br />
-		>> addPC: <label id="label_ifid_addPC">-offline-</label><br />
-		>> instruction: <label id="label_ifid_instruction">-offline-</label><br />
-		Decoded instruction: <br />
-		<pre id="pre_decoder"></pre>
-		Register destination: <br />
-		<pre id="pre_regDst"></pre>
-		Sign extender: <br />
-		<pre id="pre_extender"></pre>
-		Pipeline-IDEX:<br />
-		ALU: <br />
-		<pre id="pre_alu"></pre>
+		<table width='100%' border='1px solid #808080'>
+			<tr>
+				<td>
+					PC: <label id="label_pc">-offline-</label><br />
+					Instruction: <label id="label_icache_data">-offline-</label><br />
+					I-Cache: <label id="label_icache_status">-offline-</label><br />
+				</td>
+				<td>
+					Pipeline-IFID:<br />
+					>> addPC: <label id="label_ifid_addPC">-offline-</label><br />
+					>> instruction: <label id="label_ifid_instruction">-offline-</label><br />
+					Decoded instruction: <br />
+					<pre id="pre_decoder"></pre>
+					Register destination: <br />
+					<pre id="pre_regDst"></pre>
+					Sign extender: <br />
+					<pre id="pre_extender"></pre>
+				</td>
+				<td>
+					Pipeline-IDEX:<br />
+					ALU: <br />
+					<pre id="pre_alu"></pre>
+				</td>
+			</tr>
+		</table>
 		Debug: <br />
 		<pre id="pre_debug"></pre>
 		<pre id="icache_dump"></pre>
