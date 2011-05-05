@@ -178,7 +178,7 @@ function run() {
 					   , $('#d_associativity').val()
 					   , true
 					   , 'dcache');
-	register = new registerFile(32);
+	register = new registerFile(32, 'register');
 	clu = new controlLogicUnit();
 	regDstMux = createRegDstMux();
 	extenderMux = createExtenderMux();
@@ -191,6 +191,7 @@ function run() {
 	
 	icache.visual();
 	dcache.visual();
+	register.visual();
 	loadMemory(mainMemory);
 	//mainMemory.dump();
 	
@@ -224,6 +225,7 @@ function step() {
 	pipelineIFID.clock(new Array(pc.portAddPC
 	                             , icache.read(netPC, mainMemory, 'icache')));
 	ifidInstruction = pipelineIFID.portOut('instruction');
+	clu.passThrough(ifidInstruction);
 	netRegDst = regDstMux.portOut(new Array(ifidInstruction.extract('rt')
 								            , ifidInstruction.extract('rd')
 								            , 31) 
