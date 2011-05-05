@@ -124,6 +124,17 @@ function createPipelineEXMEM() {
 	pipelineEXMEM.initializeRegister('bundle', dummyCLU.passThrough(0));
 	return pipelineEXMEM;
 }
+function createPipelineMEMWB() {
+	var dummyCLU = new controlLogicUnit()
+	var arraySignal = new Array('pipeline'
+	                            , 'dcache'
+								, 'rd'
+								, 'bundle'
+								, 'instruction');
+	pipelineMEMWB = new pipelineLatch(arraySignal, 'Pipeline MEMWB');
+	pipelineMEMWB.initializeRegister('bundle', dummyCLU.passThrough(0));
+	return pipelineMEMWB;
+}
 function createRegDstMux() {
 	var arraySignal = new Array('rt', 'rd', 'returnAddress');
 	regDstMux = new mux(arraySignal, 'regDstMux', 'pre_regDst', false);
@@ -140,23 +151,46 @@ function createALUSrcMux() {
 	ALUSrcMux = new mux(arraySignal, 'ALUSrcMux', 'pre_ALUSrcMux', true);
 	return ALUSrcMux;
 }
+function createWBMux() {
+	var arraySignal = new Array('ALU', 'DCache');
+	WBMux = new mux(arraySignal, 'WBMux', 'pre_WBMux', true);
+	return WBMux;
+}
+function createForwarder(name) {
+	var arraySignal = new Array('pipeline', 'mem', 'wb');
+	forwarderMux = new mux(arraySignal, name, 'pre_' + name, true);
+	return forwarderMux;
+}
 function run() {
 	mainMemory = new memory();
 	pc = new programCounter(0);
 	pipelineIFID = createPipelineIFID();
 	pipelineIDEX = createPipelineIDEX();
 	pipelineEXMEM = createPipelineEXMEM();
+	pipelineMEMWB = createPipelineMEMWB();
 	icache = new cache($('#i_index').val()
 	                   , $('#i_block').val()
-					   , $('#i_associativity').val());
+					   , $('#i_associativity').val()
+					   , false
+					   , 'icache');
+	dcache = new cache($('#d_index').val()
+	                   , $('#d_block').val()
+					   , $('#d_associativity').val()
+					   , true
+					   , 'dcache');
 	register = new registerFile(32);
 	clu = new controlLogicUnit();
 	regDstMux = createRegDstMux();
 	extenderMux = createExtenderMux();
 	alu = new alu();
-	aluSrcMux = new createALUSrcMux();
+	aluSrcMux = createALUSrcMux();
+	fwdUnit = new forwarding();
+	fwd_A = createForwarder('fwd_A');
+	fwd_B = createForwarder('fwd_B');
+	wbMux = createWBMux();
 	
-	icache.visual('icache');
+	icache.visual();
+	dcache.visual();
 	loadMemory(mainMemory);
 	//mainMemory.dump();
 	
@@ -177,6 +211,10 @@ function step() {
 	var netRegDst;
 	var aluB = 0;
 	var aluOut = 0;
+	var dcacheOutput = 0;
+	var wbData = 0;
+	var netFWD_A = 0;
+	var netFWD_B = 0;
 	
 	netPC = pc.portOut();
 	pc.visual();
@@ -204,19 +242,52 @@ function step() {
 								 , clu.passThrough(ifidInstruction)
 								 , ifidInstruction));
 	pc.advance(false, 0, false, 0, false);
-	aluB = aluSrcMux.portOut(new Array(pipelineIDEX.portOut('rB')
+	aluB = aluSrcMux.portOut(new Array(netFWD_B
 	                                   , pipelineIDEX.portOut('shamt')
 					                   , pipelineIDEX.portOut('ext')
 					                   , pipelineIDEX.portOut('ext') << 16)
 					         , pipelineIDEX.portOut('bundle')['ALUSrc']);
-	aluOut = alu.process(pipelineIDEX.portOut('rA')
+	
+	aluOut = alu.process(netFWD_A
 	            , aluB
 				, pipelineIDEX.portOut('bundle')['ALUOpcode']);
-	pipelineEXMEM.clock(new Array(pipelineIDEX.portOut('nextPC')
-	                              , aluOut
+	pipelineEXMEM.clock(new Array(aluOut
+	                              , netFWD_B
 								  , pipelineIDEX.portOut('rd')
 								  , pipelineIDEX.portOut('bundle')
 								  , pipelineIDEX.portOut('instruction')));
+	dcacheOutput = dcache.consumeSignal(pipelineIDEX.portOut('bundle')
+	                     , pipelineEXMEM.portOut('result')
+						 , pipelineEXMEM.portOut('data')
+						 , mainMemory
+						 , 'dcache');
+	pipelineMEMWB.clock(new Array(pipelineEXMEM.portOut('result')
+	                              , dcacheOutput
+								  , pipelineEXMEM.portOut('rd')
+								  , pipelineEXMEM.portOut('bundle')
+								  , pipelineEXMEM.portOut('instruction')));
+	wbData = WBMux.portOut(new Array(pipelineMEMWB.portOut('pipeline')
+	                                 , pipelineMEMWB.portOut('dcache'))
+					       , pipelineMEMWB.portOut('bundle')['WB']);
+	register.portWrite(pipelineMEMWB.portOut('bundle')['rd']
+	                   , wbData
+					   , pipelineMEMWB.portOut('bundle')['regWrite']);	
+					   
+	fwdUnit.process(ifidInstruction.extract('rs')
+	                , ifidInstruction.extract('rt')
+					, clu.portRegWrite()
+					, pipelineIDEX.portOut('bundle')['rd']
+					, pipelineIDEX.portOut('bundle')['regWrite']
+					, pipelineEXMEM.portOut('bundle')['rd']
+					, pipelineEXMEM.portOut('bundle')['regWrite']);
+	netFWD_A = fwd_A.portOut(new Array(register.portRead(ifidInstruction.extract('rs'))
+	                                   , aluOut
+							           , pipelineEXMEM.portOut('result'))
+				             , fwdUnit.portA());	
+	netFWD_B = fwd_B.portOut(new Array(register.portRead(ifidInstruction.extract('rt'))
+	                                   , aluOut
+							           , pipelineEXMEM.portOut('result'))
+				              , fwdUnit.portB());			 
 	return mainMemory.portRead(netPC);
 }
 

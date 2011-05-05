@@ -15,6 +15,7 @@
 		<script type="text/javascript" src="lib/cell/controlLogicUnit.js"></script>
 		<script type="text/javascript" src="lib/cell/mux.js"></script>
 		<script type="text/javascript" src="lib/cell/alu.js"></script>
+		<script type="text/javascript" src="lib/cell/forwarding.js"></script>
     </head>
     <body>
         <h1>Visual MIPS Simulator</h1>
@@ -42,11 +43,31 @@
 							<td>I-Cache block offset in bits</td>
 							<td>
 								<input id='i_block' value=3 size=2 onkeyup="recalculate(this, 'i_block_info')"></input>
-								<label id='i_block_info'>2</label> bytes per block
+								<label id='i_block_info'>8</label> bytes per block
 							</td>
 						</tr>
 						<tr>
-							<td><pre><label id='general_info'></label></pre></td>
+							<td><pre><label id='general_icache'></label></pre></td>
+						</tr>
+						<tr>
+							<td>D-Cache associativity</td>
+							<td>
+								<input id='d_associativity' value=2 size=2></input>
+							</td>
+						</tr>
+						<tr>
+							<td>D-Cache index width in bits</td>
+							<td>
+								<input id='d_index' value=4 size=2 onkeyup="recalculate(this, 'd_index_info')"></input>
+								<label id='d_index_info'>16</label> frames per set
+							</td>
+						</tr>
+						<tr>
+							<td>D-Cache block offset in bits</td>
+							<td>
+								<input id='d_block' value=3 size=2 onkeyup="recalculate(this, 'd_block_info')"></input>
+								<label id='d_block_info'>8</label> bytes per block
+							</td>
 						</tr>
 					</table>
 				</td>
@@ -81,10 +102,23 @@
 					ALU: <br />
 					<pre id="pre_alu"></pre>
 				</td>
+				<td>
+					Pipeline-EXMEM:<br />
+				</td>
+				<td>
+					Pipeline-MEMWB:<br />
+					WB Mux: <br />
+					<pre id="pre_WBMux"></pre>
+				</td>
 			</tr>
 		</table>
 		Debug: <br />
 		<pre id="pre_debug"></pre>
-		<pre id="icache_dump"></pre>
+		<table width='100%'>
+			<tr>
+				<td><pre id="icache_dump"></pre></td>
+				<td><pre id="dcache_dump"></pre></td>
+			</tr>
+		</table>
     </body>
 </html>
