@@ -94,7 +94,7 @@ Array.prototype.max = function() {
 //////////////////////////////////////////////////////////////////////////////
 function createPipelineIFID() {
 	var arraySignal = new Array('nextPC', 'instruction');
-	pipelineIFID = new pipelineLatch(arraySignal, 'Pipeline IFID');
+	pipelineIFID = new pipelineLatch(arraySignal, 'ifid');
 	return pipelineIFID;
 }
 function createPipelineIDEX() {
@@ -109,7 +109,7 @@ function createPipelineIDEX() {
 								, 'shamt'
 								, 'bundle'
 								, 'instruction');
-	pipelineIDEX = new pipelineLatch(arraySignal, 'Pipeline IDEX');
+	pipelineIDEX = new pipelineLatch(arraySignal, 'idex');
 	pipelineIDEX.initializeRegister('bundle', dummyCLU.passThrough(0));
 	return pipelineIDEX;
 }
@@ -120,7 +120,7 @@ function createPipelineEXMEM() {
 								, 'rd'
 								, 'bundle'
 								, 'instruction');
-	pipelineEXMEM = new pipelineLatch(arraySignal, 'Pipeline EXMEM');
+	pipelineEXMEM = new pipelineLatch(arraySignal, 'exmem');
 	pipelineEXMEM.initializeRegister('bundle', dummyCLU.passThrough(0));
 	return pipelineEXMEM;
 }
@@ -131,7 +131,7 @@ function createPipelineMEMWB() {
 								, 'rd'
 								, 'bundle'
 								, 'instruction');
-	pipelineMEMWB = new pipelineLatch(arraySignal, 'Pipeline MEMWB');
+	pipelineMEMWB = new pipelineLatch(arraySignal, 'memwb');
 	pipelineMEMWB.initializeRegister('bundle', dummyCLU.passThrough(0));
 	return pipelineMEMWB;
 }
@@ -195,42 +195,56 @@ function run() {
 	loadMemory(mainMemory);
 	//mainMemory.dump();
 	
+	bench = new signalBench();
+	
 	if ($('#enableDebug').is(':checked')) {
 		$('#step').attr('disabled', false);
 	}
 	else {
 		do {
-			var localIns = step();
+			var localIns = step(bench);
 		} while (localIns != 0xFFFFFFFF)
 	}
 }
+function signalBench() {
+	this.ifidInstruction = 0;
+	this.netPC;
+	this.netExtender;
+	this.netRegDst;
+	this.aluB = 0;
+	this.aluOut = 0;
+	this.dcacheOutput = 0;
+	this.wbData = 0;
+	this.netFWD_A = 0;
+	this.netFWD_B = 0;
+}
 
-function step() {
-	var ifidInstruction = 0;
+function step(b) {
+	/*var ifidInstruction = 0;
 	var netPC;
 	var netExtender;
 	var netRegDst;
 	var aluB = 0;
-	var aluOut = 0;
+	var aluOut;
 	var dcacheOutput = 0;
 	var wbData = 0;
 	var netFWD_A = 0;
-	var netFWD_B = 0;
-	
-	netPC = pc.portOut();
+	var netFWD_B = 0;*/
+
+	b.netPC = pc.portOut();
 	pc.visual();
 	//icache.read(netPC, mainMemory);
 	//ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
 	//ifid.portAddPC();
 	pipelineIFID.clock(new Array(pc.portAddPC
-	                             , icache.read(netPC, mainMemory, 'icache')));
+	                             , icache.read(b.netPC, mainMemory, 'icache')));
 	ifidInstruction = pipelineIFID.portOut('instruction');
 	clu.passThrough(ifidInstruction);
-	netRegDst = regDstMux.portOut(new Array(ifidInstruction.extract('rt')
+	b.netRegDst = regDstMux.portOut(new Array(ifidInstruction.extract('rt')
 								            , ifidInstruction.extract('rd')
 								            , 31) 
 						          , clu.portRegDst());
-	netExtender = extenderMux.portOut(new Array(ifidInstruction.extract('immediateExtendSign')
+	b.netExtender = extenderMux.portOut(new Array(ifidInstruction.extract('immediateExtendSign')
 								                , ifidInstruction.extract('immediate'))
 						              , clu.portExtendSign());
 	pipelineIDEX.clock(new Array(pipelineIFID.portOut('nextPC')
@@ -238,44 +252,59 @@ function step() {
 								 , register.portRead(ifidInstruction.extract('rt'))
 								 , ifidInstruction.extract('rs')
 								 , ifidInstruction.extract('rt')
-								 , netRegDst
-								 , netExtender
-								 , ifidInstruction.extract('shamt')
+								 , b.netRegDst
+								 , b.netExtender
+								 , b.ifidInstruction.extract('shamt')
 								 , clu.passThrough(ifidInstruction)
-								 , ifidInstruction));
+								 , b.ifidInstruction));
 	pc.advance(false, 0, false, 0, false);
-	aluB = aluSrcMux.portOut(new Array(netFWD_B
+	fwdUnit.process(b.ifidInstruction.extract('rs')
+	                , b.ifidInstruction.extract('rt')
+					, clu.portRegWrite()
+					, pipelineIDEX.portOut('bundle')['rd']
+					, pipelineIDEX.portOut('bundle')['regWrite']
+					, pipelineEXMEM.portOut('bundle')['rd']
+					, pipelineEXMEM.portOut('bundle')['regWrite']);
+	b.netFWD_A = fwd_A.portOut(new Array(register.portRead(ifidInstruction.extract('rs'))
+	                                   , b.aluOut
+							           , pipelineEXMEM.portOut('result'))
+				             , fwdUnit.portA());	
+	b.netFWD_B = fwd_B.portOut(new Array(register.portRead(ifidInstruction.extract('rt'))
+	                                   , b.aluOut
+							           , pipelineEXMEM.portOut('result'))
+				             , fwdUnit.portB());
+	b.aluB = aluSrcMux.portOut(new Array(b.netFWD_B
 	                                   , pipelineIDEX.portOut('shamt')
 					                   , pipelineIDEX.portOut('ext')
 					                   , pipelineIDEX.portOut('ext') << 16)
 					         , pipelineIDEX.portOut('bundle')['ALUSrc']);
 	
-	aluOut = alu.process(netFWD_A
-	            , aluB
+	b.aluOut = alu.process(b.netFWD_A
+	            , b.aluB
 				, pipelineIDEX.portOut('bundle')['ALUOpcode']);
-	pipelineEXMEM.clock(new Array(aluOut
-	                              , netFWD_B
+	pipelineEXMEM.clock(new Array(b.aluOut
+	                              , b.netFWD_B
 								  , pipelineIDEX.portOut('rd')
 								  , pipelineIDEX.portOut('bundle')
 								  , pipelineIDEX.portOut('instruction')));
-	dcacheOutput = dcache.consumeSignal(pipelineIDEX.portOut('bundle')
+	b.dcacheOutput = dcache.consumeSignal(pipelineIDEX.portOut('bundle')
 	                     , pipelineEXMEM.portOut('result')
 						 , pipelineEXMEM.portOut('data')
 						 , mainMemory
 						 , 'dcache');
 	pipelineMEMWB.clock(new Array(pipelineEXMEM.portOut('result')
-	                              , dcacheOutput
+	                              , b.dcacheOutput
 								  , pipelineEXMEM.portOut('rd')
 								  , pipelineEXMEM.portOut('bundle')
 								  , pipelineEXMEM.portOut('instruction')));
-	wbData = WBMux.portOut(new Array(pipelineMEMWB.portOut('pipeline')
+	b.wbData = WBMux.portOut(new Array(pipelineMEMWB.portOut('pipeline')
 	                                 , pipelineMEMWB.portOut('dcache'))
 					       , pipelineMEMWB.portOut('bundle')['WB']);
-	register.portWrite(pipelineMEMWB.portOut('bundle')['rd']
-	                   , wbData
+	register.portWrite(pipelineMEMWB.portOut('rd')
+	                   , b.wbData
 					   , pipelineMEMWB.portOut('bundle')['regWrite']);	
 					   
-	fwdUnit.process(ifidInstruction.extract('rs')
+	/*fwdUnit.process(ifidInstruction.extract('rs')
 	                , ifidInstruction.extract('rt')
 					, clu.portRegWrite()
 					, pipelineIDEX.portOut('bundle')['rd']
@@ -289,8 +318,8 @@ function step() {
 	netFWD_B = fwd_B.portOut(new Array(register.portRead(ifidInstruction.extract('rt'))
 	                                   , aluOut
 							           , pipelineEXMEM.portOut('result'))
-				              , fwdUnit.portB());			 
-	return mainMemory.portRead(netPC);
+				             , fwdUnit.portB());*/			 
+	return mainMemory.portRead(b.netPC);
 }
 
 function recalculate(myObject, target) {
