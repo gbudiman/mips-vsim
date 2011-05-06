@@ -16,6 +16,7 @@
 		<script type="text/javascript" src="lib/cell/mux.js"></script>
 		<script type="text/javascript" src="lib/cell/alu.js"></script>
 		<script type="text/javascript" src="lib/cell/forwarding.js"></script>
+		<link rel="stylesheet" href="style.css" />
     </head>
     <body onload='bench = new signalBench();'>
         <h1>Visual MIPS Simulator</h1>
@@ -85,39 +86,38 @@
 					PC: <label id="label_pc">-offline-</label><br />
 					Instruction: <label id="label_icache_data">-offline-</label><br />
 					I-Cache: <label id="label_icache_status">-offline-</label><br />
-				</td>
-				<td>
+					<hr />
 					Pipeline-IFID:<br />
-					>> addPC: <label id="label_ifid_addPC">-offline-</label><br />
-					>> instruction: <label id="label_ifid_instruction">-offline-</label><br />
 					Decoded instruction: <br />
 					<pre id="pre_decoder"></pre>
 					Register destination: <br />
 					<pre id="pre_regDst"></pre>
 					Sign extender: <br />
 					<pre id="pre_extender"></pre>
+					<div id="ifid_flop"></div>
 				</td>
 				<td>
 					Pipeline-IDEX:<br />
-					FWD-A: <br />
+					<span id="fwd_A" onclick="compact(this)">FWD-A:</span><br />
 					<pre id="pre_fwd_A"></pre>
-					FWD-B: <br />
+					<span id="fwd_B" onclick="compact(this)">FWD-B:</span><br />
 					<pre id="pre_fwd_B"></pre>
-					Src-B: <br />
+					<span id="ALUSrcMux" onclick="compact(this)">Src-B:</span><br />
 					<pre id="pre_ALUSrcMux"></pre>
-					ALU: <br />
+					<span id="alu" onclick="compact(this)">ALU:</span><br />
 					<pre id="pre_alu"></pre>
-					<pre id="idex_flop"></pre>
+					<span id="idex" onclick="tableCompact(this)">Latches: </span>
+					<div id="idex_flop" onclick="tableCompact(this)"></div>
 				</td>
 				<td>
 					Pipeline-EXMEM:<br />
-					<pre id="exmem_flop"></pre>
+					<div id="exmem_flop"></div>
 				</td>
 				<td>
 					Pipeline-MEMWB:<br />
 					WB Mux: <br />
 					<pre id="pre_WBMux"></pre>
-					<pre id="memwb_flop"></pre>
+					<div id="memwb_flop"></div>
 				</td>
 			</tr>
 		</table>

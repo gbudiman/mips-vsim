@@ -14,6 +14,7 @@ function loadMemory(myMemory) {
 }
 
 Number.prototype.formatHex = function(length){
+	if (isNaN(this)) { return this; }
 	var hexString = parseInt(this).toString(16).toUpperCase();
 	//$('#pre_debug').append(hexString + '\n');
 	if (hexString[0] == '-') {
@@ -236,7 +237,7 @@ function step(b) {
 	//icache.read(netPC, mainMemory);
 	//ifid.portIn(pc.portAddPC(), icache.read(netPC, mainMemory));
 	//ifid.portAddPC();
-	pipelineIFID.clock(new Array(pc.portAddPC
+	pipelineIFID.clock(new Array(pc.portAddPC()
 	                             , icache.read(b.netPC, mainMemory, 'icache')));
 	ifidInstruction = pipelineIFID.portOut('instruction');
 	clu.passThrough(ifidInstruction);
